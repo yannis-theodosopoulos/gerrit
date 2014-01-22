@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Ant-Test" default="main" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+	<property name="src.dir"             location="src"/>
+	<property name="build.dir"           location="bin"/>
+	<property name="dist.dir"            location="dist"/>
+	<property name="docs.dir"            location="docs"/>
+	<property name="ivy.home"            location="${user.home}\.ivy2"/>
+	<property name="ivy.jar.dir"         location="${ivy.home}\lib"/>
+	<property name="ivy.jar.file"        location="${ivy.jar.dir}\ivy.jar"/>
+	<property name="ivy.classpath"       location="lib"/>
+	<property name="ivy.install.version" value="2.3.0"/>
+	
+	<!-- download Ivy from web site so that it can be used even without any special installation -->
+	<target name="download-ivy" unless="offline">
+		<mkdir dir="${ivy.jar.dir}"/>
+		<get dest="${ivy.jar.file}" src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" usetimestamp="true"/>
+	</target>
+	
+	<!-- Initialise Ivy -->
+	<target name="init-ivy" depends="download-ivy">
+		<mkdir dir="${ivy.classpath}"/>
+		<path id="ivy.lib.path">
+			<fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+		</path>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+		<ivy:settings file="ivysettings.xml"/>
+		<ivy:resolve conf="provided, compile"/>
+		<ivy:retrieve pattern="${ivy.classpath}/[module]-[revision].[ext]" pathId="${ivy.classpath}" overwritemode="never"/>
+	</target>
+	
+	<target name="makepom" depends="init-ivy">
+		<ivy:deliver deliverpattern="ivy.xml"/>
+		<ivy:makepom ivyfile="ivy.xml" pomfile="poms/pom.xml" conf="default">
+			<mapping conf="default" scope="compile"/>
+		</ivy:makepom>
+	</target>
+	
+	<!-- Deletes the existing build, docs and dist directory-->
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+		<delete dir="${docs.dir}"/>
+		<delete dir="${dist.dir}"/>
+	</target>
+	
+	<!-- Creates the  build, docs and dist directory-->
+	<target name="makedir">
+		<mkdir dir="${build.dir}"/>
+		<mkdir dir="${docs.dir}"/>
+		<mkdir dir="${dist.dir}"/>
+	</target>
+	
+	<target name="compile" depends="clean, makedir, init-ivy">
+		<javac includeantruntime="false" srcdir="${src.dir}" destdir="${build.dir}"  classpathref="${ivy.classpath}"/>
+	</target>
+	
+	<!-- Creates Javadoc -->
+	<target name="docs" depends="compile">
+		<javadoc packagenames="src" sourcepath="${src.dir}" destdir="${docs.dir}" classpathref="${ivy.classpath}">
+			<!-- Define which files / directory should get included, we include all -->
+			<fileset dir="${src.dir}">
+			 <include name="**" />
+			</fileset>
+		</javadoc>
+	</target>
+	
+	<!-- Creates the deployable jar file -->
+	<target name="jar" depends="compile">
+		<jar destfile="${dist.dir}/com.performgroup.ivy.build.test.ant.jar" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="test.Main"/>
+			</manifest>
+		</jar>
+	</target>
+	
+	<!-- The Main target of the build -->
+	<target name="main" depends="compile, makepom, jar, docs">
+		<description>The Main target</description>
+	</target>
+	
+</project>
