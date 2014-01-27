@@ -11,6 +11,7 @@ public class Main {
         MyMath math = new MyMath();
         System.out.println("Compiling resources...");
         System.out.println("Result is: " + math.multi(5, 10));
+		System.out.println("Resources compiled!");
         System.out.println(m_Log);
     }
 }
